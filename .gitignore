@@ -16,4 +16,9 @@ Thumbs.db
 __pycache__/
 *.pyc
 
+# Local environment variables
+.env
+.env.*
+!.env.example
+
 firmware.bin
