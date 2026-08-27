@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  dev-env:
+    build:
+      context: .
+      args:
+        - WIFI_SSID=${WIFI_SSID}
+        - WIFI_PASS=${WIFI_PASS}
+    container_name: platformio-dev-env
+    volumes:
+      # Mount your project source code
+      - .:/workspace
+      # Cache PlatformIO toolchains & libraries so they persist
+      - pio_cache:/workspace/.platformio
+    # Keeps the container running indefinitely in the background
+    stdin_open: true
+    tty: true
+    working_dir: /workspace
+
+volumes:
+  pio_cache:

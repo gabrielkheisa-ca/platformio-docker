@@ -1,0 +1,19 @@
+# PlatformIO local build outputs and caches
+.pio/
+.pioenvs/
+.piolibdeps/
+.clang_complete
+.gcc-flags.json
+
+# If you use VS Code locally for editing, ignore its workspace settings
+.vscode/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Python caches (if any leak into the host)
+__pycache__/
+*.pyc
+
+firmware.bin

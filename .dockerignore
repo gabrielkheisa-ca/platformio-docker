@@ -1,0 +1,24 @@
+# Ignore local build outputs and caches
+.pio/
+.vscode/
+.idea/
+
+# Ignore Git files
+.git/
+.gitignore
+
+# Ignore Docker-related artifacts
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Ignore compiled output binaries dropped on host
+*.bin
+*.elf
+*.hex
+
+# Ignore OS junk
+.DS_Store
+Thumbs.db
+
+firmware.bin

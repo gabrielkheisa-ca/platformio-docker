@@ -1,0 +1,117 @@
+name: PlatformIO Firmware Build & Export
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:
+    inputs:
+      pio_env:
+        description: 'PlatformIO Build Environment'
+        required: true
+        default: 'd1_mini_ota'
+        type: choice
+        options:
+          - d1_mini_ota
+          - d1_mini_usb
+
+jobs:
+  # =========================================================================
+  # PRIMARY JOB: Build firmware using Docker and output binaries as artifacts
+  # =========================================================================
+  build-and-export:
+    name: Build & Export Firmware
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build firmware and export binaries via Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: export
+          # Pass the build environment (defaults to pio_env input, or fallback if push/pull_request)
+          build-args: |
+            PIO_ENV=${{ github.event.inputs.pio_env || 'd1_mini_ota' }}
+            WIFI_SSID=${{ secrets.WIFI_SSID }}
+            WIFI_PASS=${{ secrets.WIFI_PASS }}
+          # Export compiled binaries directly to a local directory using BuildKit local exporter
+          outputs: type=local,dest=./build_output
+
+      - name: Upload microcontroller binaries as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-binaries-${{ github.event.inputs.pio_env || 'd1_mini_ota' }}
+          path: ./build_output/firmware.*
+          if-no-files-found: error
+          retention-days: 14
+
+  # =========================================================================
+  # COMMENTED OUT: Old / alternative workflows (e.g., native build, tests, image push)
+  # Keeping these commented out so this Action is solely focused on binary output.
+  # =========================================================================
+
+  # # ALTERNATIVE JOB: Build natively on runner without Docker
+  # native-build:
+  #   name: Native PlatformIO Build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Set up Python
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: '3.11'
+  #
+  #     - name: Install PlatformIO
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         pip install -U platformio
+  #
+  #     - name: Compile Firmware
+  #       run: pio run -e d1_mini_ota
+  #
+  #     # - name: Run Unit Tests (Commented out)
+  #     #   run: pio test -e d1_mini_ota
+  #
+  #     - name: Upload Native Artifacts
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: native-firmware
+  #         path: .pio/build/d1_mini_ota/firmware.*
+
+  # # REGISTRY JOB: Build and push builder Docker image to GitHub Container Registry (GHCR)
+  # push-docker-image:
+  #   name: Build and Push Docker Image
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     packages: write
+  #   steps:
+  #     - name: Checkout repository
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Log in to GHCR
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ghcr.io
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
+  #
+  #     - name: Build and push builder stage
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         context: .
+  #         target: builder
+  #         push: true
+  #         tags: ghcr.io/${{ github.repository }}/platformio-builder:latest
